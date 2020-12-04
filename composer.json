@@ -1,7 +1,7 @@
 {
     "name": "bizarg/repository",
     "description": "repository",
-    "version": "1.0.3",
+    "version": "1.1",
     "minimum-stability": "dev",
     "license": "MIT",
     "authors": [
@@ -16,12 +16,6 @@
         }
     },
     "require": {
-        "php": ">=7.1",
-        "illuminate/console": ">=6.0",
-        "illuminate/support": ">=6.0",
-        "illuminate/database": ">=6.0",
-        "illuminate/foundation": ">=6.0",
-        "illumminate/pagination": ">=6.0",
-        "illumminate/http": ">=6.0"
+        "php": ">=7.1"
     }
 }

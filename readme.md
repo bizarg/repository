@@ -1,57 +1,84 @@
-# crud-generator
+# repository
 
 config/app.php
 ```PHP
-[
-    'providers' => [
-        Bizarg\Crud\CrudServiceProvider::class,
-    ]
-];
-```
-template property example CrudGenerate:
-
-     'Api', - {{namespace}} 
-     'CrudGenerate', - {{modelName}} 
-     'crudGenerate', - {{modelNameSingularLowerCaseFirst}}
-     'crudGenerates', - {{modelNamePluralLowerCase}} 
-     'crud_generates', - {{modelNamePluralLowerCaseUnderscore}} 
-     'CrudGenerates', - {{modelNamePlural}} 
-     'crud-generates', - {{modelNamePluralLowerCaseHyphen}} 
-     'Api\Domain', - {{domainPath}} 
-     'Api\Application', - {{commandPath}}
-     'Api\Http\Resources', - {{resourcePath}}
-     'Api\Http\Requests', - {{requestPath}}
-     'Api\Http\Controllers', - {{controllerPath}} 
-     'Api\Infrastructure\Eloquent', - {{repositoryPath}} 
-     'Tests\Feature', - {{testPath}} 
-     'Eloquent', - {{repositoryFilePrefix}}
-
-config:
-```PHP
 <?php
-return [
-    'namespace' => 'api',
-    'path' => [
-        'domain' => 'Domain',
-        'command' => 'Application',
-        'repository' => 'Infrastructure/Eloquent',
-        'controller' => 'Http/Controllers',
-        'request' => 'Http/Requests',
-        'resource' => 'Http/Resources',
-        'migrate' => 'database/migrations',
-        'test' => 'tests/Feature',
-        'doc' => 'api-doc',
-        'stub' => null,
-        ''
-    ],
-    'repositoryFilePrefix' => 'Eloquent',
-    'generate' => [
-        'collection' => true
-    ],
-    'declare' => true
-]; 
-```             
+/**
+ * Interface Repository
+ * @package Bizarg\Repository\Contract
+ */
+interface Repository
+{
+    /**
+     * @param Pagination|null $pagination
+     * @return LengthAwarePaginator
+     */
+    public function pagination(Pagination $pagination): LengthAwarePaginator;
 
-    php artisan vendor:bublish --tag=crud-generator-config
-    php artisan vendor:bublish --tag=crud-generator-stubs
-    php artisan crud:generate UserProjectTest
+    /**
+     * @return Collection
+     */
+    public function collection(): Collection;
+
+    /**
+     * @return Model|null
+     */
+    public function first(): ?Model;
+
+    /**
+     * @param int $id
+     * @return Model|null
+     */
+    public function byId(int $id): ?Model;
+
+    /**
+     * @param string $value
+     * @param string|null $key
+     * @return Collection
+     */
+    public function pluck(string $value, ?string $key = null): Collection;
+
+    /**
+     * @return int
+     */
+    public function count(): int;
+
+    /**
+     * @param Model $model
+     */
+    public function store(Model $model): void;
+
+    /**
+     * @param Model $model
+     * @throws Exception
+     */
+    public function delete(Model $model): void;
+
+    /**
+     * @param Filter|null $filter
+     * @return self
+     */
+    public function setFilter(?Filter $filter);
+
+    /**
+     * @param Order|null $order
+     * @return self
+     */
+    public function setOrder(?Order $order);
+
+    /**
+     * @param int $limit
+     * @return self
+     */
+    public function setLimit(int $limit);
+
+    /**
+     * @param string $value
+     * @param string|null $key
+     * @return bool
+     */
+    public function exists(string $value, ?string $key = null): bool;
+}
+
+```
+

@@ -17,12 +17,11 @@
     },
     "require": {
         "php": ">=7.1",
-        "illuminate/console": "^6.0|^7.0|^8.0",
-        "illuminate/support": "^6.0|^7.0|^8.0",
-        "illuminate/database": "^6.0|^7.0|^8.0",
-        "illuminate/foundation": "^6.0|^7.0|^8.0",
-        "illumminate/pagination": "^6.0|^7.0|^8.0",
-        "illumminate/http": "^6.0|^7.0|^8.0",
-        "bizarg/string-helper": "dev-main"
+        "illuminate/console": ">=6.0",
+        "illuminate/support": ">=6.0",
+        "illuminate/database": ">=6.0",
+        "illuminate/foundation": ">=6.0",
+        "illumminate/pagination": ">=6.0",
+        "illumminate/http": ">=6.0"
     }
 }

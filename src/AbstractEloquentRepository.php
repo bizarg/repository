@@ -56,6 +56,18 @@ abstract class AbstractEloquentRepository implements Repository
     /**
      * @inheritDoc
      */
+    public function pagination(Pagination $pagination): LengthAwarePaginator
+    {
+        $this->builder = $this->model->newQuery();
+
+        $this->filterAndOrder();
+
+        return $this->builder->paginate($pagination->limit(), ['*'], 'page', $pagination->page());
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function collection(): Collection
     {
         $this->builder = $this->model->newQuery();
@@ -95,18 +107,6 @@ abstract class AbstractEloquentRepository implements Repository
     public function byId(int $id): ?Model
     {
         return $this->model->newQuery()->find($id);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function pagination(Pagination $pagination): LengthAwarePaginator
-    {
-        $this->builder = $this->model->newQuery();
-
-        $this->filterAndOrder();
-
-        return $this->builder->paginate($pagination->limit(), ['*'], 'page', $pagination->page());
     }
 
     /**

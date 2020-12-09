@@ -14,7 +14,7 @@ use Illuminate\Support\Collection;
 interface Repository
 {
     /**
-     * @param Pagination|null $pagination
+     * @param Pagination $pagination
      * @return LengthAwarePaginator
      */
     public function pagination(Pagination $pagination): LengthAwarePaginator;
@@ -77,9 +77,7 @@ interface Repository
     public function setLimit(int $limit);
 
     /**
-     * @param string $value
-     * @param string|null $key
      * @return bool
      */
-    public function exists(string $value, ?string $key = null): bool;
+    public function exists(): bool;
 }

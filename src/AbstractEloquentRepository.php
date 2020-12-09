@@ -62,7 +62,19 @@ abstract class AbstractEloquentRepository implements Repository
 
         $this->filterAndOrder();
 
-        return $this->builder->paginate($pagination->limit(), ['*'], 'page', $pagination->page());
+        return $this->builder->paginate($pagination->limit(), [$this->table . '*'], 'page', $pagination->page());
+    }
+
+    private function call()
+    {
+        $this->builder = $this->model->newQuery();
+
+        $this->filterAndOrder();
+
+        $args = func_get_args();
+        $method = $args[0];
+        unset($args[0]);
+        $this->builder->{$method}(...$args);
     }
 
     /**
@@ -92,7 +104,7 @@ abstract class AbstractEloquentRepository implements Repository
     /**
      * @inheritDoc
      */
-    public function exists(string $value, ?string $key = null): bool
+    public function exists(): bool
     {
         $this->builder = $this->model->newQuery();
 

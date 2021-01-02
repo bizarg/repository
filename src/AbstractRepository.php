@@ -5,18 +5,20 @@ namespace Bizarg\Repository;
 use Bizarg\Repository\Contract\Filter;
 use Bizarg\Repository\Contract\Order;
 use Bizarg\Repository\Contract\Pagination;
-use Bizarg\Repository\Contract\Repository;
+use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
- * Class EloquentLeadRepository
- * @package App\Infrastructure\Eloquent
+ * Class AbstractRepository
+ * @package Bizarg\Repository
  */
-abstract class AbstractEloquentRepository implements Repository
+abstract class AbstractRepository
 {
     /**
      * @var Model
@@ -30,6 +32,10 @@ abstract class AbstractEloquentRepository implements Repository
      * @var Builder
      */
     protected Builder $builder;
+    /**
+     * @var QueryBuilder|null
+     */
+    protected ?QueryBuilder $queryBuilder = null;
     /**
      * @var Filter|null
      */
@@ -55,6 +61,7 @@ abstract class AbstractEloquentRepository implements Repository
 
     /**
      * @inheritDoc
+     * @throws Exception
      */
     public function pagination(Pagination $pagination): LengthAwarePaginator
     {
@@ -62,11 +69,12 @@ abstract class AbstractEloquentRepository implements Repository
 
         $this->filterAndOrder();
 
-        return $this->builder->paginate($pagination->limit(), ['*'], 'page', $pagination->page());
+        return $this->builder->paginate($pagination->limit(), [$this->table . '*'], 'page', $pagination->page());
     }
 
     /**
      * @inheritDoc
+     * @throws Exception
      */
     public function collection(): Collection
     {
@@ -79,6 +87,7 @@ abstract class AbstractEloquentRepository implements Repository
 
     /**
      * @inheritDoc
+     * @throws Exception
      */
     public function pluck(string $value, ?string $key = null): Collection
     {
@@ -92,11 +101,15 @@ abstract class AbstractEloquentRepository implements Repository
     /**
      * @inheritDoc
      */
-    public function exists(string $value, ?string $key = null): bool
+    public function exists(): bool
     {
         $this->builder = $this->model->newQuery();
 
-        $this->filterAndOrder();
+        if (!$this->filter) {
+            return false;
+        }
+
+        $this->filter($this->filter);
 
         return $this->builder->exists();
     }
@@ -116,13 +129,16 @@ abstract class AbstractEloquentRepository implements Repository
     {
         $this->builder = $this->model->newQuery();
 
-        $this->filterAndOrder();
+        if ($this->filter) {
+            $this->filter($this->filter);
+        }
 
         return $this->builder->first();
     }
 
     /**
      * @inheritDoc
+     * @throws Exception
      */
     public function count(): int
     {
@@ -144,6 +160,7 @@ abstract class AbstractEloquentRepository implements Repository
 
     /**
      * @inheritDoc
+     * @throws Exception
      */
     public function delete(Model $model): void
     {
@@ -153,10 +170,16 @@ abstract class AbstractEloquentRepository implements Repository
 
     /**
      * @inheritDoc
+     * @throws Exception
      */
     public function setFilter(?Filter $filter): self
     {
+        if ($filter && get_class($this->model) . 'Filter' != get_class($filter)) {
+            throw new Exception('Used not valid filter.');
+        }
+
         $this->filter = $filter;
+
         return $this;
     }
 
@@ -179,7 +202,7 @@ abstract class AbstractEloquentRepository implements Repository
     }
 
     /**
-     * @return void
+     * @throws Exception
      */
     protected function filterAndOrder(): void
     {
@@ -204,7 +227,15 @@ abstract class AbstractEloquentRepository implements Repository
      */
     protected function hasJoin(string $table): bool
     {
-        $joins = $this->builder->getQuery()->joins;
+        $joins = null;
+
+        if ($this->queryBuilder instanceof QueryBuilder) {
+            $joins = $this->queryBuilder->joins;
+        }
+
+        if ($this->builder instanceof Builder) {
+            $joins = $this->builder->getQuery()->joins;
+        }
 
         if ($joins == null) {
             return false;
@@ -217,15 +248,6 @@ abstract class AbstractEloquentRepository implements Repository
         }
 
         return false;
-    }
-
-    /**
-     * @return void
-     */
-    protected function reset(): void
-    {
-        $this->filter = null;
-        $this->order = null;
     }
 
     /**
@@ -250,5 +272,43 @@ abstract class AbstractEloquentRepository implements Repository
         }
 
         $this->builder->orderBy($order->field(), $order->direction());
+    }
+
+    /**
+     * @return void
+     */
+    protected function reset(): void
+    {
+        $this->filter = null;
+        $this->order = null;
+        $this->limit = null;
+    }
+
+    /**
+     * @param Filter $filter
+     * @return void
+     */
+    protected function queryForAggregateFunction(?Filter $filter): void
+    {
+        $this->queryBuilder = DB::table($this->table($this->table));
+
+        $this->queryBuilder->select([
+            $this->table . 'id',
+        ]);
+
+        if ($filter) {
+            $this->filter($filter);
+        }
+
+        $this->builder = $this->model->newQuery()->whereIn($this->table . 'id', $this->queryBuilder);
+    }
+
+    /**
+     * @param $table
+     * @return string
+     */
+    protected function table($table)
+    {
+        return trim($table, '.');
     }
 }

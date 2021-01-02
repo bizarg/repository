@@ -72,6 +72,18 @@ abstract class AbstractRepository
         return $this->builder->paginate($pagination->limit(), [$this->table . '*'], 'page', $pagination->page());
     }
 
+    private function call()
+    {
+        $this->builder = $this->model->newQuery();
+
+        $this->filterAndOrder();
+
+        $args = func_get_args();
+        $method = $args[0];
+        unset($args[0]);
+        $this->builder->{$method}(...$args);
+    }
+
     /**
      * @inheritDoc
      * @throws Exception

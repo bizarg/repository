@@ -290,10 +290,10 @@ abstract class AbstractRepository
 
     /**
      * @param Model $model
-     * @return bool
+     * @return void
      * @throws Exception
      */
-    protected function validModel(Model $model): bool
+    protected function validModel(Model $model): void
     {
         if (get_class($this->model) !== get_class($model)) {
             throw new Exception('Used not valid model.');

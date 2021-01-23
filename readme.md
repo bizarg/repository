@@ -3,6 +3,12 @@
 config/app.php
 ```PHP
 <?php
+
+use Exception;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+
 /**
  * Interface Repository
  * @package Bizarg\Repository\Contract
@@ -78,6 +84,28 @@ interface Repository
      * @return bool
      */
     public function exists(string $value, ?string $key = null): bool;
+
+    /**
+     * @param array $data
+     */
+    public function updateAll(array $data): void;
+
+    /**
+     * @throws Exception
+     */
+    public function deleteAll(): void;
+
+    /**
+     * @return Collection
+     * @throws Exception
+     */
+    public function listIds(): Collection;
+
+    /**
+     * @param int $id
+     * @return Model|null
+     */
+    public function findOrFail(int $id): ?Model;
 }
 
 ```

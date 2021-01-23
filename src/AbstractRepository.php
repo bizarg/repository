@@ -2,6 +2,7 @@
 
 namespace Bizarg\Repository;
 
+use App\Domain\UserProject\UserProject;
 use Bizarg\Repository\Contract\Filter;
 use Bizarg\Repository\Contract\Order;
 use Bizarg\Repository\Contract\Pagination;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Class AbstractRepository
@@ -84,6 +86,15 @@ abstract class AbstractRepository
      * @inheritDoc
      * @throws Exception
      */
+    public function listIds(): array
+    {
+        return $this->pluck('id')->toArray();
+    }
+
+    /**
+     * @inheritDoc
+     * @throws Exception
+     */
     public function exists(): bool
     {
         if (!$this->filter) {
@@ -104,6 +115,15 @@ abstract class AbstractRepository
 
     /**
      * @inheritDoc
+     */
+    public function findOrFail(int $id): ?Model
+    {
+        $this->reset();
+        return $this->model->newQuery()->findOrFail($id);
+    }
+
+    /**
+     * @inheritDoc
      * @throws Exception
      */
     public function count(): int
@@ -116,6 +136,7 @@ abstract class AbstractRepository
      */
     public function byId(int $id): ?Model
     {
+        $this->reset();
         return $this->model->newQuery()->find($id);
     }
 
@@ -141,6 +162,23 @@ abstract class AbstractRepository
 
         $this->model = $model;
         $this->model->delete();
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function deleteAll(): void
+    {
+        $this->model->newQuery()->whereIn('id', $this->listIds())->delete();
+    }
+
+    /**
+     * @inheritDoc
+     * @throws Exception
+     */
+    public function updateAll(array $data): void
+    {
+        $this->model->newQuery()->whereIn('id', $this->listIds())->update($data);
     }
 
     /**
@@ -182,9 +220,7 @@ abstract class AbstractRepository
      */
     protected function sortAndLimit(): self
     {
-        if ($this->order) {
-            $this->sort($this->order);
-        }
+        $this->sort($this->order);
 
         if ($this->limit) {
             $this->limit($this->limit);
@@ -229,6 +265,11 @@ abstract class AbstractRepository
      */
     protected function sort(?Order $order): void
     {
+        if (!$order) {
+            $this->builder->orderBy($this->table . 'id', 'asc');
+            return;
+        }
+
         $table = collect(explode('.', $order->field()))->first();
 
         if ($this->table != $table . '.') {

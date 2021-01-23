@@ -82,4 +82,25 @@ interface Repository
      * @return bool
      */
     public function exists(): bool;
+
+    /**
+     * @param array $data
+     */
+    public function updateAll(array $data): void;
+
+    /**
+     * @throws Exception
+     */
+    public function deleteAll(): void;
+
+    /**
+     * @return array
+     */
+    public function listIds(): array;
+
+    /**
+     * @param int $id
+     * @return Model|null
+     */
+    public function findOrFail(int $id): ?Model;
 }

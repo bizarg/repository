@@ -147,9 +147,7 @@ abstract class AbstractRepository
     public function store(Model $model): void
     {
         $this->validModel($model);
-
-        $this->model = $model;
-        $this->model->save();
+        $model->save();
     }
 
     /**
@@ -159,9 +157,7 @@ abstract class AbstractRepository
     public function delete(Model $model): void
     {
         $this->validModel($model);
-
-        $this->model = $model;
-        $this->model->delete();
+        $model->delete();
     }
 
     /**

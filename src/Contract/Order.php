@@ -2,33 +2,13 @@
 
 namespace Bizarg\Repository\Contract;
 
-/**
- * Interface OrderInterface
- * @package Bizarg\Repository\Contract
- */
 interface Order
 {
-    /**
-     * @return string
-     */
-    public function field();
+    public function field(): ?string;
 
-    /**
-     * @param string $field
-     *
-     * @return $this
-     */
-    public function setField($field);
+    public function setField(?string $field): static;
 
-    /**
-     * @return string
-     */
-    public function direction();
+    public function direction(): ?string;
 
-    /**
-     * @param string $direction
-     *
-     * @return $this
-     */
-    public function setDirection($direction);
+    public function setDirection(?string $direction): static;
 }

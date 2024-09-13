@@ -2,25 +2,11 @@
 
 namespace Bizarg\Repository\Contract;
 
-
-/**
- * Class Pagination
- * @package Bizarg\Repository\Contract
- */
 interface Pagination
 {
-    /**
-     * @return int
-     */
-    public function page();
+    public function page(): ?int;
 
-    /**
-     * @return int
-     */
-    public function offset();
+    public function offset(): ?int;
 
-    /**
-     * @return int
-     */
-    public function limit();
+    public function limit(): ?int;
 }

@@ -2,7 +2,6 @@
 
 namespace Bizarg\Repository;
 
-use App\Domain\UserProject\UserProject;
 use Bizarg\Repository\Contract\Filter;
 use Bizarg\Repository\Contract\Order;
 use Bizarg\Repository\Contract\Pagination;
@@ -12,47 +11,20 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
-/**
- * Class AbstractRepository
- * @package Bizarg\Repository
- */
 abstract class AbstractRepository
 {
-    /**
-     * @var Model
-     */
     protected Model $model;
-    /**
-     * @var Application
-     */
     protected Application $app;
-    /**
-     * @var null|Builder
-     */
     protected ?Builder $builder = null;
-    /**
-     * @var Filter|null
-     */
     protected ?Filter $filter = null;
-    /**
-     * @var Order|null
-     */
     protected ?Order $order = null;
-    /**
-     * @var string
-     */
     protected string $table;
-    /**
-     * @var int|null
-     */
     protected ?int $limit = null;
+    protected ?array $columns = null;
+    protected $isAggregateQuery = false;
 
-    /**
-     * @param Filter $filter
-     * @return void
-     */
     abstract protected function filter(Filter $filter): void;
 
     /**
@@ -61,7 +33,12 @@ abstract class AbstractRepository
      */
     public function pagination(Pagination $pagination): LengthAwarePaginator
     {
-        return $this->prepareBuilder()->paginate($pagination->limit(), [$this->table . '*'], 'page', $pagination->page());
+        $this->prepareBuilder();
+
+        return $this->builder->paginate(
+            perPage: $pagination->limit(),
+            page: $pagination->page()
+        );
     }
 
     /**
@@ -140,6 +117,11 @@ abstract class AbstractRepository
         return $this->model->newQuery()->find($id);
     }
 
+    public function getPreperedBuilder(): Builder
+    {
+        return $this->prepareBuilder();
+    }
+
     /**
      * @inheritDoc
      * @throws Exception
@@ -181,7 +163,7 @@ abstract class AbstractRepository
      * @inheritDoc
      * @throws Exception
      */
-    public function setFilter(?Filter $filter): self
+    public function setFilter(?Filter $filter): static
     {
         if ($filter && get_class($this->model) . 'Filter' != get_class($filter)) {
             throw new Exception('Used not valid filter.');
@@ -192,10 +174,16 @@ abstract class AbstractRepository
         return $this;
     }
 
+    public function setColumns(array $columns): static
+    {
+        $this->columns = $columns;
+        return $this;
+    }
+
     /**
      * @inheritDoc
      */
-    public function setOrder(?Order $order): self
+    public function setOrder(?Order $order): static
     {
         $this->order = $order;
         return $this;
@@ -204,7 +192,7 @@ abstract class AbstractRepository
     /**
      * @inheritDoc
      */
-    public function setLimit(int $limit): self
+    public function setLimit(int $limit): static
     {
         $this->limit = $limit;
         return $this;
@@ -212,9 +200,8 @@ abstract class AbstractRepository
 
     /**
      * @throws Exception
-     * @return $this
      */
-    protected function sortAndLimit(): self
+    protected function sortAndLimit(): static
     {
         $this->sort($this->order);
 
@@ -225,10 +212,17 @@ abstract class AbstractRepository
         return $this;
     }
 
-    /**
-     * @param string $table
-     * @return bool
-     */
+    public function isAggregateQuery(): bool
+    {
+        return $this->isAggregateQuery;
+    }
+
+    public function setIsAggregateQuery(bool $isAggregateQuery): static
+    {
+        $this->isAggregateQuery = $isAggregateQuery;
+        return $this;
+    }
+
     protected function hasJoin(string $table): bool
     {
         $joins = $this->builder->getQuery()->joins;
@@ -246,19 +240,11 @@ abstract class AbstractRepository
         return false;
     }
 
-    /**
-     * @param int $limit
-     * @return void
-     */
     protected function limit(int $limit): void
     {
         $this->builder->limit($limit);
     }
 
-    /**
-     * @param Order|null $order
-     * @return void
-     */
     protected function sort(?Order $order): void
     {
         if (!$order) {
@@ -266,19 +252,23 @@ abstract class AbstractRepository
             return;
         }
 
-        $table = collect(explode('.', $order->field()))->first();
-
-        if ($this->table != $table . '.') {
-            $this->{'join' . ucfirst($table)}();
-        }
+        $this->joinTable($order->field());
 
         $this->builder->orderBy($order->field(), $order->direction());
     }
 
-    /**
-     * @return $this
-     */
-    protected function reset()
+    protected function joinTable(string $table)
+    {
+        if (strpos($table, '.') !== false) {
+            $table = collect(explode('.', $table))->first();
+        }
+
+        if ($this->table != $table . '.') {
+            $this->{'join' . Str::ucfirst(Str::camel($table))}();
+        }
+    }
+
+    protected function reset(): static
     {
         $this->filter = null;
         $this->order = null;
@@ -287,37 +277,41 @@ abstract class AbstractRepository
         return $this;
     }
 
-    /**
-     * @return $this
-     */
-    protected function queryForAggregateFunction()
+    protected function queryForAggregateFunction(): static
     {
         $this->builder = $this->model->newQuery();
-
-        $this->builder->select([
-            $this->table . 'id',
-        ]);
 
         if ($this->filter) {
             $this->filter($this->filter);
         }
 
-        $this->builder = $this->model->newQuery()->whereIn($this->table . 'id', $this->builder->getQuery());
+        if ($this->isAggregateQuery) {
+            $this->builder->select([
+                $this->table . 'id',
+            ]);
+
+            $this->builder = $this->model->newQuery()->whereIn($this->table . 'id', $this->builder->getQuery());
+        }
+
+
+        if ($this->columns && count($this->columns)) {
+            foreach ($this->columns as $column) {
+                $this->joinTable($column);
+            }
+            $this->builder->select($this->columns);
+            $this->columns = null;
+        }
+
 
         return $this;
     }
 
-    /**
-     * @param $table
-     * @return string
-     */
-    protected function table($table)
+    protected function table(string $table): string
     {
         return trim($table, '.');
     }
 
     /**
-     * @return Builder
      * @throws Exception
      */
     protected function prepareBuilder(): Builder
@@ -326,8 +320,6 @@ abstract class AbstractRepository
     }
 
     /**
-     * @param Model $model
-     * @return void
      * @throws Exception
      */
     protected function validModel(Model $model): void

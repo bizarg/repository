@@ -9,7 +9,9 @@ use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -24,6 +26,7 @@ abstract class AbstractRepository
     protected ?int $limit = null;
     protected ?array $columns = null;
     protected $isAggregateQuery = false;
+    private array $additionalTables = [];
 
     abstract protected function filter(Filter $filter): void;
 
@@ -120,6 +123,11 @@ abstract class AbstractRepository
     public function getPreperedBuilder(): Builder
     {
         return $this->prepareBuilder();
+    }
+
+    public function value(string $column): mixed
+    {
+        return $this->prepareBuilder()->value($column);
     }
 
     /**
@@ -223,6 +231,17 @@ abstract class AbstractRepository
         return $this;
     }
 
+    public function getAdditionalTables(): array
+    {
+        return $this->additionalTables;
+    }
+
+    public function setAdditionalTables(array $additionalTables): static
+    {
+        $this->additionalTables = $additionalTables;
+        return $this;
+    }
+
     protected function hasJoin(string $table): bool
     {
         $joins = $this->builder->getQuery()->joins;
@@ -296,12 +315,19 @@ abstract class AbstractRepository
 
         if ($this->columns && count($this->columns)) {
             foreach ($this->columns as $column) {
+                if ($column instanceof Expression) {
+                    continue;
+                }
                 $this->joinTable($column);
             }
             $this->builder->select($this->columns);
             $this->columns = null;
         }
 
+
+        foreach ($this->additionalTables as $table) {
+            $this->joinTable($table);
+        }
 
         return $this;
     }

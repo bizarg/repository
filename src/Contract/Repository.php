@@ -64,4 +64,8 @@ interface Repository
     public function setIsAggregateQuery(bool $isAggreageQuery): static;
 
     public function isAggregateQuery(): bool;
+
+    public function value(string $column): mixed;
+
+    public function setAdditionalTables(array $additionalTables): static;
 }

@@ -267,13 +267,28 @@ abstract class AbstractRepository
     protected function sort(?Order $order): void
     {
         if (!$order) {
-            $this->builder->orderBy($this->table . 'id', 'asc');
+            $this->builder->orderBy($this->table . 'id');
             return;
         }
 
-        $this->joinTable($order->field());
+        foreach ($order->getCases() as $field => $array) {
+            $this->builder->orderByRaw("CASE " .
+                implode(
+                    ' ',
+                    array_map(
+                        function ($value) use ($field) {
+                            return "WHEN $field = $value THEN 0";
+                        },
+                        $array
+                    )
+                ) . " ELSE 1 END");
+        }
 
-        $this->builder->orderBy($order->field(), $order->direction());
+        foreach ($order->fields() as $index => $field) {
+            $this->joinTable($field);
+
+            $this->builder->orderBy($field, $order->directions()[$index]);
+        }
     }
 
     protected function joinTable(string $table)

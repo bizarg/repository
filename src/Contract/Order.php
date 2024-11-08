@@ -4,11 +4,15 @@ namespace Bizarg\Repository\Contract;
 
 interface Order
 {
-    public function field(): ?string;
+    public function fields(): array;
 
-    public function setField(?string $field): static;
+    public function setFields(array $fields): static;
 
-    public function direction(): ?string;
+    public function directions(): array;
 
-    public function setDirection(?string $direction): static;
+    public function setDirections(array $directions): static;
+
+    public function setCases(array $values, array $allowedFields, string $field = 'id'): static;
+
+    public function getCases(): array;
 }

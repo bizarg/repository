@@ -327,7 +327,6 @@ abstract class AbstractRepository
             $this->builder = $this->model->newQuery()->whereIn($this->table . 'id', $this->builder->getQuery());
         }
 
-
         if ($this->columns && count($this->columns)) {
             foreach ($this->columns as $column) {
                 if ($column instanceof Expression) {
@@ -337,6 +336,8 @@ abstract class AbstractRepository
             }
             $this->builder->select($this->columns);
             $this->columns = null;
+        } else {
+            $this->builder->select($this->table . '*');
         }
 
 

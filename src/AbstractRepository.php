@@ -298,7 +298,10 @@ abstract class AbstractRepository
         }
 
         if ($this->table != $table . '.') {
-            $this->{'join' . Str::ucfirst(Str::camel($table))}();
+            $method = 'join' . Str::ucfirst(Str::camel($table));
+            if (method_exists($this, $method)) {
+                $this->{$method}();
+            }
         }
     }
 
